@@ -2,6 +2,9 @@ import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { ServerStatusPlatform } from './platform';
 import { ServerConfig } from './settings';
 import * as ping from 'ping';
+import * as http from 'http';
+import * as https from 'https';
+import { URL } from 'url';
 
 /**
  * Server Status Accessory
@@ -46,7 +49,7 @@ export class ServerStatusAccessory {
    * CONTACT_NOT_DETECTED (1) = server is down (disconnected)
    */
   async getContactSensorState(): Promise<CharacteristicValue> {
-    const isUp = await this.pingServer();
+    const isUp = await this.checkServerStatus();
     this.platform.log.debug(`[${this.serverConfig.name}] Status:`, isUp ? 'UP (Contact Detected)' : 'DOWN (Contact Not Detected)');
     
     // Return the appropriate ContactSensorState value
@@ -56,9 +59,27 @@ export class ServerStatusAccessory {
   }
 
   /**
+   * Check server status using the configured method (ping or HTTP)
+   */
+  private async checkServerStatus(): Promise<boolean> {
+    const method = this.serverConfig.method || this.platform.config.defaultMethod || 'ping';
+    
+    try {
+      if (method === 'http') {
+        return await this.httpCheck();
+      } else {
+        return await this.pingCheck();
+      }
+    } catch (error) {
+      this.platform.log.error(`[${this.serverConfig.name}] ${method.toUpperCase()} check error:`, error);
+      return false;
+    }
+  }
+
+  /**
    * Ping the server to check if it's up
    */
-  private async pingServer(): Promise<boolean> {
+  private async pingCheck(): Promise<boolean> {
     try {
       const timeout = this.serverConfig.timeout || this.platform.config.defaultTimeout || 5000;
       
@@ -82,17 +103,80 @@ export class ServerStatusAccessory {
   }
 
   /**
+   * HTTP/HTTPS check to see if server responds with 200 status
+   */
+  private async httpCheck(): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        const timeout = this.serverConfig.timeout || this.platform.config.defaultTimeout || 5000;
+        let url = this.serverConfig.url;
+        
+        // Add protocol if missing
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          url = `http://${url}`;
+        }
+
+        const urlObj = new URL(url);
+        const isHttps = urlObj.protocol === 'https:';
+        const client = isHttps ? https : http;
+
+        const options = {
+          hostname: urlObj.hostname,
+          port: urlObj.port || (isHttps ? 443 : 80),
+          path: urlObj.pathname || '/',
+          method: 'GET',
+          timeout: timeout,
+          headers: {
+            'User-Agent': 'Homebridge-ServerStatus/1.0'
+          }
+        };
+
+        const req = client.request(options, (res) => {
+          // Accept any 2xx status code as success
+          const isSuccess = res.statusCode && res.statusCode >= 200 && res.statusCode < 300;
+          
+          this.platform.log.debug(
+            `[${this.serverConfig.name}] HTTP ${res.statusCode} ${isSuccess ? '✅' : '❌'}`
+          );
+          
+          resolve(isSuccess || false);
+          
+          // Consume response data to free up memory
+          res.on('data', () => {});
+        });
+
+        req.on('error', (error) => {
+          this.platform.log.debug(`[${this.serverConfig.name}] HTTP request error:`, error.message);
+          resolve(false);
+        });
+
+        req.on('timeout', () => {
+          this.platform.log.debug(`[${this.serverConfig.name}] HTTP request timeout`);
+          req.destroy();
+          resolve(false);
+        });
+
+        req.end();
+        
+      } catch (error) {
+        this.platform.log.error(`[${this.serverConfig.name}] HTTP check setup error:`, error);
+        resolve(false);
+      }
+    });
+  }
+
+  /**
    * Start periodic monitoring of the server
    */
   private startMonitoring() {
     const interval = this.serverConfig.interval || this.platform.config.defaultInterval || 60000; // Default 1 minute
 
     // Initial check
-    this.checkServerStatus();
+    this.performStatusCheck();
 
     // Set up periodic checking
     this.pingInterval = setInterval(() => {
-      this.checkServerStatus();
+      this.performStatusCheck();
     }, interval);
 
     this.platform.log.info(`[${this.serverConfig.name}] Started monitoring with ${interval}ms interval`);
@@ -101,9 +185,9 @@ export class ServerStatusAccessory {
   /**
    * Check server status and update HomeKit if status changed
    */
-  private async checkServerStatus() {
+  private async performStatusCheck() {
     try {
-      const isUp = await this.pingServer();
+      const isUp = await this.checkServerStatus();
       
       if (isUp !== this.currentStatus) {
         this.currentStatus = isUp;

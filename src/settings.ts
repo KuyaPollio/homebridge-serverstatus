@@ -14,6 +14,7 @@ export const PLUGIN_NAME = 'homebridge-serverstatus';
 export interface ServerConfig {
   name: string;
   url: string;
+  method?: 'ping' | 'http';
   timeout?: number;
   interval?: number;
 }
@@ -25,6 +26,7 @@ export interface ServerStatusPlatformConfig {
   platform: string;
   name?: string;
   servers: ServerConfig[];
+  defaultMethod?: 'ping' | 'http';
   defaultTimeout?: number;
   defaultInterval?: number;
 } 

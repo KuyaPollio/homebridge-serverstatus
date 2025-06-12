@@ -9,31 +9,43 @@
     {
       "platform": "ServerStatusPlatform",
       "name": "Server Status Monitor",
+      "defaultMethod": "ping",
       "defaultTimeout": 5000,
       "defaultInterval": 60000,
       "servers": [
         {
           "name": "Home NAS",
           "url": "192.168.1.50",
+          "method": "ping",
           "timeout": 3000,
           "interval": 30000
         },
         {
           "name": "Router",
           "url": "192.168.1.1",
+          "method": "ping",
           "timeout": 2000,
           "interval": 45000
         },
         {
           "name": "Web Server",
           "url": "https://www.example.com",
+          "method": "http",
           "timeout": 8000,
           "interval": 120000
         },
         {
+          "name": "API Endpoint",
+          "url": "https://api.github.com",
+          "method": "http",
+          "timeout": 5000,
+          "interval": 90000
+        },
+        {
           "name": "Local Development Server",
-          "url": "localhost",
-          "timeout": 1000,
+          "url": "http://localhost:3000",
+          "method": "http",
+          "timeout": 2000,
           "interval": 15000
         }
       ]

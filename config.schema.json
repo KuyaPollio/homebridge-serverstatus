@@ -16,8 +16,15 @@
         "type": "string",
         "default": "Server Status"
       },
+      "defaultMethod": {
+        "title": "Default Check Method",
+        "type": "string",
+        "default": "ping",
+        "enum": ["ping", "http"],
+        "enumNames": ["Ping (ICMP)", "HTTP/HTTPS Request"]
+      },
       "defaultTimeout": {
-        "title": "Default Ping Timeout (ms)",
+        "title": "Default Timeout (ms)",
         "type": "number",
         "default": 5000,
         "minimum": 1000,
@@ -46,10 +53,17 @@
               "title": "Server URL or IP",
               "type": "string",
               "required": true,
-              "placeholder": "192.168.1.100 or example.com"
+              "placeholder": "192.168.1.100 or https://example.com"
+            },
+            "method": {
+              "title": "Check Method",
+              "type": "string",
+              "enum": ["ping", "http"],
+              "enumNames": ["Ping (ICMP)", "HTTP/HTTPS Request"],
+              "placeholder": "ping"
             },
             "timeout": {
-              "title": "Ping Timeout (ms)",
+              "title": "Timeout (ms)",
               "type": "number",
               "minimum": 1000,
               "maximum": 30000,
@@ -73,6 +87,7 @@
       "title": "General Settings",
       "items": [
         "name",
+        "defaultMethod",
         "defaultTimeout",
         "defaultInterval"
       ]
@@ -85,6 +100,7 @@
       "items": [
         "servers[].name",
         "servers[].url",
+        "servers[].method",
         "servers[].timeout",
         "servers[].interval"
       ]

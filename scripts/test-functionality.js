@@ -44,24 +44,71 @@ async function testPingFunctionality() {
   
   // Test 3: External Connectivity (may fail in CI)
   console.log('\n🌐 Test 3: External Connectivity');
+  
+  // Test Ping
+  console.log('   📡 Testing Ping method...');
   const externalHosts = ['8.8.8.8', 'google.com', '1.1.1.1'];
   
   for (const host of externalHosts) {
     try {
-      console.log(`   Testing ${host}...`);
+      console.log(`   Testing ping to ${host}...`);
       const result = await ping.promise.probe(host, { 
         timeout: isCI ? 10 : 5,
         min_reply: 1 
       });
       
       if (result.alive) {
-        console.log(`   ✅ ${host} is reachable (${result.time}ms)`);
+        console.log(`   ✅ ${host} is reachable via ping (${result.time}ms)`);
         break; // Success with at least one host
       } else {
-        console.log(`   ⚠️  ${host} not reachable`);
+        console.log(`   ⚠️  ${host} not reachable via ping`);
       }
     } catch (err) {
-      console.log(`   ⚠️  ${host} test failed: ${err.message}`);
+      console.log(`   ⚠️  ${host} ping test failed: ${err.message}`);
+    }
+  }
+  
+  // Test HTTP
+  console.log('   🌐 Testing HTTP method...');
+  const httpHosts = ['https://www.google.com', 'http://httpbin.org/status/200'];
+  
+  for (const url of httpHosts) {
+    try {
+      console.log(`   Testing HTTP request to ${url}...`);
+      const https = require('https');
+      const http = require('http');
+      const { URL } = require('url');
+      
+      const urlObj = new URL(url);
+      const client = urlObj.protocol === 'https:' ? https : http;
+      
+      const result = await new Promise((resolve) => {
+        const req = client.request({
+          hostname: urlObj.hostname,
+          port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+          path: urlObj.pathname,
+          method: 'GET',
+          timeout: 5000,
+          headers: { 'User-Agent': 'Homebridge-ServerStatus-Test/1.0' }
+        }, (res) => {
+          const success = res.statusCode >= 200 && res.statusCode < 300;
+          resolve({ success, statusCode: res.statusCode });
+          res.on('data', () => {}); // consume data
+        });
+        
+        req.on('error', () => resolve({ success: false, statusCode: null }));
+        req.on('timeout', () => { req.destroy(); resolve({ success: false, statusCode: null }); });
+        req.end();
+      });
+      
+      if (result.success) {
+        console.log(`   ✅ ${url} responded with HTTP ${result.statusCode}`);
+        break; // Success with at least one host
+      } else {
+        console.log(`   ⚠️  ${url} failed (HTTP ${result.statusCode || 'error'})`);
+      }
+    } catch (err) {
+      console.log(`   ⚠️  ${url} HTTP test failed: ${err.message}`);
     }
   }
   
