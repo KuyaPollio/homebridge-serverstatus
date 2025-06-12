@@ -1,0 +1,43 @@
+{
+  "bridge": {
+    "name": "Homebridge",
+    "username": "CC:22:3D:E3:CE:30",
+    "port": 51826,
+    "pin": "031-45-154"
+  },
+  "platforms": [
+    {
+      "platform": "ServerStatusPlatform",
+      "name": "Server Status Monitor",
+      "defaultTimeout": 5000,
+      "defaultInterval": 60000,
+      "servers": [
+        {
+          "name": "Home NAS",
+          "url": "192.168.1.50",
+          "timeout": 3000,
+          "interval": 30000
+        },
+        {
+          "name": "Router",
+          "url": "192.168.1.1",
+          "timeout": 2000,
+          "interval": 45000
+        },
+        {
+          "name": "Web Server",
+          "url": "https://www.example.com",
+          "timeout": 8000,
+          "interval": 120000
+        },
+        {
+          "name": "Local Development Server",
+          "url": "localhost",
+          "timeout": 1000,
+          "interval": 15000
+        }
+      ]
+    }
+  ],
+  "accessories": []
+} 

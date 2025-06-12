@@ -1,0 +1,36 @@
+{
+  "name": "homebridge-serverstatus",
+  "version": "1.0.0",
+  "description": "A Homebridge plugin to monitor server status using ping",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "server-monitoring",
+    "ping",
+    "status",
+    "sensors"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "homebridge": ">=1.6.0"
+  },
+  "dependencies": {
+    "ping": "^0.4.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/ping": "^0.4.1",
+    "homebridge": "^1.6.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "homebridge": ">=1.6.0"
+  }
+} 

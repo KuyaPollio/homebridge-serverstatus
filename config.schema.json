@@ -1,0 +1,93 @@
+{
+  "pluginAlias": "ServerStatusPlatform",
+  "pluginType": "platform",
+  "singular": false,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "platform": {
+        "title": "Platform",
+        "type": "string",
+        "required": true,
+        "default": "ServerStatusPlatform"
+      },
+      "name": {
+        "title": "Platform Name",
+        "type": "string",
+        "default": "Server Status"
+      },
+      "defaultTimeout": {
+        "title": "Default Ping Timeout (ms)",
+        "type": "number",
+        "default": 5000,
+        "minimum": 1000,
+        "maximum": 30000
+      },
+      "defaultInterval": {
+        "title": "Default Check Interval (ms)",
+        "type": "number",
+        "default": 60000,
+        "minimum": 10000,
+        "maximum": 300000
+      },
+      "servers": {
+        "title": "Servers to Monitor",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Server Name",
+              "type": "string",
+              "required": true,
+              "placeholder": "My Server"
+            },
+            "url": {
+              "title": "Server URL or IP",
+              "type": "string",
+              "required": true,
+              "placeholder": "192.168.1.100 or example.com"
+            },
+            "timeout": {
+              "title": "Ping Timeout (ms)",
+              "type": "number",
+              "minimum": 1000,
+              "maximum": 30000,
+              "placeholder": "5000"
+            },
+            "interval": {
+              "title": "Check Interval (ms)",
+              "type": "number",
+              "minimum": 10000,
+              "maximum": 300000,
+              "placeholder": "60000"
+            }
+          }
+        }
+      }
+    }
+  },
+  "layout": [
+    {
+      "type": "fieldset",
+      "title": "General Settings",
+      "items": [
+        "name",
+        "defaultTimeout",
+        "defaultInterval"
+      ]
+    },
+    {
+      "key": "servers",
+      "type": "array",
+      "title": "Servers",
+      "description": "Add servers to monitor",
+      "items": [
+        "servers[].name",
+        "servers[].url",
+        "servers[].timeout",
+        "servers[].interval"
+      ]
+    }
+  ]
+} 
