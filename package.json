@@ -6,7 +6,13 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "prepublishOnly": "npm run build"
+    "clean": "rm -rf dist",
+    "rebuild": "npm run clean && npm run build",
+    "prepublishOnly": "npm run build",
+    "release": "./scripts/release.sh",
+    "release:patch": "./scripts/release.sh patch",
+    "release:minor": "./scripts/release.sh minor",
+    "release:major": "./scripts/release.sh major"
   },
   "keywords": [
     "homebridge-plugin",

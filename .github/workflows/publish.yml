@@ -1,0 +1,85 @@
+name: Publish to NPM
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - 'SETUP.md'
+      - '.gitignore'
+  release:
+    types: [ published ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+          
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build TypeScript
+      run: npm run build
+      
+    - name: Check if version changed
+      id: version-check
+      run: |
+        # Get current version from package.json
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        
+        # Check if this version exists on npm
+        if npm view homebridge-serverstatus@$CURRENT_VERSION version 2>/dev/null; then
+          echo "version_exists=true" >> $GITHUB_OUTPUT
+          echo "Version $CURRENT_VERSION already exists on npm"
+        else
+          echo "version_exists=false" >> $GITHUB_OUTPUT
+          echo "Version $CURRENT_VERSION is new, will publish"
+        fi
+        
+    - name: Publish to NPM
+      if: steps.version-check.outputs.version_exists == 'false'
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        
+    - name: Create GitHub Release
+      if: steps.version-check.outputs.version_exists == 'false' && github.event_name == 'push'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version-check.outputs.current_version }}
+        release_name: Release v${{ steps.version-check.outputs.current_version }}
+        body: |
+          ## Changes in v${{ steps.version-check.outputs.current_version }}
+          
+          Automatically generated release from commit ${{ github.sha }}
+          
+          ### Installation
+          ```bash
+          npm install -g homebridge-serverstatus@${{ steps.version-check.outputs.current_version }}
+          ```
+          
+          ### What's Changed
+          - See commit history for detailed changes
+          
+        draft: false
+        prerelease: false 

@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-${{ matrix.node-version }}-
+          
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Lint TypeScript
+      run: npx tsc --noEmit
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Test ping functionality
+      run: |
+        node -e "
+        const ping = require('ping');
+        ping.promise.probe('google.com', { timeout: 5 })
+          .then(result => {
+            console.log('Ping test:', result.alive ? 'PASS ✅' : 'FAIL ❌');
+            if (!result.alive) process.exit(1);
+          })
+          .catch(err => {
+            console.error('Ping test failed:', err);
+            process.exit(1);
+          });
+        "
+        
+    - name: Check package structure
+      run: |
+        # Verify dist folder exists and contains compiled files
+        ls -la dist/
+        [ -f "dist/index.js" ] && echo "✅ Main entry point exists" || exit 1
+        [ -f "dist/platform.js" ] && echo "✅ Platform file exists" || exit 1
+        [ -f "dist/accessory.js" ] && echo "✅ Accessory file exists" || exit 1
+        [ -f "config.schema.json" ] && echo "✅ Config schema exists" || exit 1
+        
+    - name: Validate package.json
+      run: |
+        # Check required fields for npm publishing
+        node -e "
+        const pkg = require('./package.json');
+        const required = ['name', 'version', 'description', 'main', 'keywords', 'engines'];
+        const missing = required.filter(field => !pkg[field]);
+        if (missing.length > 0) {
+          console.error('Missing required fields:', missing);
+          process.exit(1);
+        }
+        console.log('✅ Package.json validation passed');
+        " 
