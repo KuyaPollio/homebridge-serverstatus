@@ -37,6 +37,11 @@
         "minimum": 10000,
         "maximum": 300000
       },
+      "defaultIgnoreSslErrors": {
+        "title": "Default Ignore SSL Errors",
+        "type": "boolean",
+        "description": "Default setting for ignoring SSL certificate errors"
+      },
       "servers": {
         "title": "Servers to Monitor",
         "type": "array",
@@ -61,6 +66,11 @@
               "enum": ["ping", "http"],
               "enumNames": ["Ping (ICMP)", "HTTP/HTTPS Request"],
               "placeholder": "ping"
+            },
+            "ignoreSslErrors": {
+              "title": "Ignore SSL Certificate Errors",
+              "type": "boolean",
+              "description": "Bypass SSL certificate validation for HTTPS requests (useful for self-signed certificates or IP addresses)"
             },
             "timeout": {
               "title": "Timeout (ms)",
@@ -89,7 +99,8 @@
         "name",
         "defaultMethod",
         "defaultTimeout",
-        "defaultInterval"
+        "defaultInterval",
+        "defaultIgnoreSslErrors"
       ]
     },
     {
@@ -101,6 +112,7 @@
         "servers[].name",
         "servers[].url",
         "servers[].method",
+        "servers[].ignoreSslErrors",
         "servers[].timeout",
         "servers[].interval"
       ]

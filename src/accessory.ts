@@ -121,6 +121,11 @@ export class ServerStatusAccessory {
         const urlObj = new URL(url);
         const isHttps = urlObj.protocol === 'https:';
         const client = isHttps ? https : http;
+        
+        // Check if we should ignore SSL errors
+        const ignoreSslErrors = this.serverConfig.ignoreSslErrors ?? 
+                               this.platform.config.defaultIgnoreSslErrors ?? 
+                               false;
 
         // Build the path, ensuring it starts with /
         let path = urlObj.pathname;
@@ -140,15 +145,25 @@ export class ServerStatusAccessory {
           headers: {
             'User-Agent': 'Homebridge-ServerStatus/1.0',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-          }
+          },
+          // SSL options for HTTPS
+          ...(isHttps && {
+            rejectUnauthorized: !ignoreSslErrors,
+            secureOptions: ignoreSslErrors ? 0 : undefined
+          })
         };
 
         this.platform.log.debug(`[${this.serverConfig.name}] HTTP request options:`, {
           hostname: options.hostname,
           port: options.port,
           path: options.path,
-          timeout: options.timeout
+          timeout: options.timeout,
+          ignoreSslErrors: ignoreSslErrors
         });
+
+        if (isHttps && ignoreSslErrors) {
+          this.platform.log.debug(`[${this.serverConfig.name}] SSL certificate validation disabled`);
+        }
 
         const req = client.request(options, (res) => {
           // Accept any 2xx status code as success
@@ -166,7 +181,13 @@ export class ServerStatusAccessory {
         });
 
         req.on('error', (error) => {
-          this.platform.log.info(`[${this.serverConfig.name}] HTTP request error: ${error.message} ❌`);
+          // Check for SSL certificate errors and provide helpful message
+          if (error.message.includes('certificate') || error.message.includes('altnames')) {
+            this.platform.log.warn(`[${this.serverConfig.name}] SSL Certificate Error: ${error.message}`);
+            this.platform.log.warn(`[${this.serverConfig.name}] 💡 Tip: Add "ignoreSslErrors": true to your server config to bypass SSL validation`);
+          } else {
+            this.platform.log.info(`[${this.serverConfig.name}] HTTP request error: ${error.message} ❌`);
+          }
           resolve(false);
         });
 

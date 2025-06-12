@@ -17,6 +17,7 @@ export interface ServerConfig {
   method?: 'ping' | 'http';
   timeout?: number;
   interval?: number;
+  ignoreSslErrors?: boolean;
 }
 
 /**
@@ -29,4 +30,5 @@ export interface ServerStatusPlatformConfig {
   defaultMethod?: 'ping' | 'http';
   defaultTimeout?: number;
   defaultInterval?: number;
+  defaultIgnoreSslErrors?: boolean;
 } 
