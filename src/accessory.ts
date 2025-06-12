@@ -168,18 +168,23 @@ export class ServerStatusAccessory {
         const req = client.request(options, (res) => {
           // Accept responses that indicate the server is up and responding:
           // - 2xx: Success responses
+          // - 3xx: Redirect responses (server is up, redirecting)
           // - 401: Unauthorized (server is up, needs auth)
           // - 403: Forbidden (server is up, access denied)
           // - 404: Not Found (server is up, wrong path)
           const isSuccess = res.statusCode && (
-            (res.statusCode >= 200 && res.statusCode < 300) || // 2xx responses
+            (res.statusCode >= 200 && res.statusCode < 400) || // 2xx and 3xx responses
             res.statusCode === 401 ||                          // 401 Unauthorized (server is up)
             res.statusCode === 403 ||                          // 403 Forbidden (server is up)
             res.statusCode === 404                             // 404 Not Found (server is up)
           );
           
-          // Provide specific messages for authentication/access responses
-          if (res.statusCode === 401) {
+          // Provide specific messages for different response types
+          if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400) {
+            this.platform.log.info(
+              `[${this.serverConfig.name}] HTTP response: ${res.statusCode} ✅ (Server UP - redirect response)`
+            );
+          } else if (res.statusCode === 401) {
             this.platform.log.info(
               `[${this.serverConfig.name}] HTTP response: ${res.statusCode} ✅ (Server UP - requires authentication)`
             );

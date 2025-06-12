@@ -195,6 +195,7 @@ Add the following to your Homebridge `config.json`:
 - **Cons**: Slightly higher overhead, requires HTTP service
 - **Status Codes**: Accepts responses indicating server is up:
   - **2xx**: Success responses (200, 201, 202, etc.)
+  - **3xx**: Redirect responses (301, 302, 307, etc.) - server is redirecting
   - **401**: Unauthorized (server up, needs authentication)
   - **403**: Forbidden (server up, access denied)
   - **404**: Not Found (server up, wrong path)
