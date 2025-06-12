@@ -1,6 +1,6 @@
 {
   "name": "homebridge-serverstatus",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A Homebridge plugin to monitor server status using ping",
   "main": "dist/index.js",
   "scripts": {
