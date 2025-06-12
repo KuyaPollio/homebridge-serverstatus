@@ -13,7 +13,7 @@ import { URL } from 'url';
  */
 export class ServerStatusAccessory {
   private service: Service;
-  private currentStatus = false;
+  private currentStatus: boolean | null = null; // null = unknown, true = up, false = down
   private pingInterval: NodeJS.Timeout | null = null;
 
   constructor(
@@ -109,53 +109,74 @@ export class ServerStatusAccessory {
     return new Promise((resolve) => {
       try {
         const timeout = this.serverConfig.timeout || this.platform.config.defaultTimeout || 5000;
-        let url = this.serverConfig.url;
+        let url = this.serverConfig.url.trim();
         
         // Add protocol if missing
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
           url = `http://${url}`;
         }
 
+        this.platform.log.debug(`[${this.serverConfig.name}] HTTP check URL: ${url}`);
+
         const urlObj = new URL(url);
         const isHttps = urlObj.protocol === 'https:';
         const client = isHttps ? https : http;
 
+        // Build the path, ensuring it starts with /
+        let path = urlObj.pathname;
+        if (urlObj.search) {
+          path += urlObj.search;
+        }
+        if (!path || path === '') {
+          path = '/';
+        }
+
         const options = {
           hostname: urlObj.hostname,
           port: urlObj.port || (isHttps ? 443 : 80),
-          path: urlObj.pathname || '/',
+          path: path,
           method: 'GET',
           timeout: timeout,
           headers: {
-            'User-Agent': 'Homebridge-ServerStatus/1.0'
+            'User-Agent': 'Homebridge-ServerStatus/1.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
           }
         };
+
+        this.platform.log.debug(`[${this.serverConfig.name}] HTTP request options:`, {
+          hostname: options.hostname,
+          port: options.port,
+          path: options.path,
+          timeout: options.timeout
+        });
 
         const req = client.request(options, (res) => {
           // Accept any 2xx status code as success
           const isSuccess = res.statusCode && res.statusCode >= 200 && res.statusCode < 300;
           
-          this.platform.log.debug(
-            `[${this.serverConfig.name}] HTTP ${res.statusCode} ${isSuccess ? '✅' : '❌'}`
+          this.platform.log.info(
+            `[${this.serverConfig.name}] HTTP response: ${res.statusCode} ${isSuccess ? '✅' : '❌'}`
           );
           
           resolve(isSuccess || false);
           
           // Consume response data to free up memory
           res.on('data', () => {});
+          res.on('end', () => {});
         });
 
         req.on('error', (error) => {
-          this.platform.log.debug(`[${this.serverConfig.name}] HTTP request error:`, error.message);
+          this.platform.log.info(`[${this.serverConfig.name}] HTTP request error: ${error.message} ❌`);
           resolve(false);
         });
 
         req.on('timeout', () => {
-          this.platform.log.debug(`[${this.serverConfig.name}] HTTP request timeout`);
+          this.platform.log.info(`[${this.serverConfig.name}] HTTP request timeout ❌`);
           req.destroy();
           resolve(false);
         });
 
+        req.setTimeout(timeout);
         req.end();
         
       } catch (error) {
@@ -170,16 +191,19 @@ export class ServerStatusAccessory {
    */
   private startMonitoring() {
     const interval = this.serverConfig.interval || this.platform.config.defaultInterval || 60000; // Default 1 minute
+    const method = this.serverConfig.method || this.platform.config.defaultMethod || 'ping';
 
-    // Initial check
-    this.performStatusCheck();
+    this.platform.log.info(`[${this.serverConfig.name}] Starting monitoring using ${method.toUpperCase()} method with ${interval}ms interval`);
+
+    // Initial check after a short delay to let the accessory fully initialize
+    setTimeout(() => {
+      this.performStatusCheck();
+    }, 2000);
 
     // Set up periodic checking
     this.pingInterval = setInterval(() => {
       this.performStatusCheck();
     }, interval);
-
-    this.platform.log.info(`[${this.serverConfig.name}] Started monitoring with ${interval}ms interval`);
   }
 
   /**
@@ -187,7 +211,12 @@ export class ServerStatusAccessory {
    */
   private async performStatusCheck() {
     try {
+      const method = this.serverConfig.method || this.platform.config.defaultMethod || 'ping';
+      this.platform.log.debug(`[${this.serverConfig.name}] Checking status using ${method.toUpperCase()} method...`);
+      
       const isUp = await this.checkServerStatus();
+      
+      this.platform.log.info(`[${this.serverConfig.name}] Current status: ${isUp ? 'UP' : 'DOWN'} (was: ${this.currentStatus === null ? 'UNKNOWN' : this.currentStatus ? 'UP' : 'DOWN'})`);
       
       if (isUp !== this.currentStatus) {
         this.currentStatus = isUp;
@@ -200,6 +229,8 @@ export class ServerStatusAccessory {
         this.service.updateCharacteristic(this.platform.Characteristic.ContactSensorState, contactState);
         
         this.platform.log.info(`[${this.serverConfig.name}] Status changed: ${isUp ? 'UP (Contact Detected)' : 'DOWN (Contact Not Detected)'}`);
+      } else {
+        this.platform.log.debug(`[${this.serverConfig.name}] Status unchanged: ${isUp ? 'UP' : 'DOWN'}`);
       }
     } catch (error) {
       this.platform.log.error(`[${this.serverConfig.name}] Error checking status:`, error);
@@ -212,6 +243,8 @@ export class ServerStatusAccessory {
           this.platform.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED
         );
         this.platform.log.info(`[${this.serverConfig.name}] Status changed: DOWN (Contact Not Detected - due to error)`);
+      } else {
+        this.platform.log.debug(`[${this.serverConfig.name}] Status unchanged: DOWN (due to error)`);
       }
     }
   }
