@@ -40,20 +40,8 @@ jobs:
     - name: Build project
       run: npm run build
       
-    - name: Test ping functionality
-      run: |
-        node -e "
-        const ping = require('ping');
-        ping.promise.probe('google.com', { timeout: 5 })
-          .then(result => {
-            console.log('Ping test:', result.alive ? 'PASS ✅' : 'FAIL ❌');
-            if (!result.alive) process.exit(1);
-          })
-          .catch(err => {
-            console.error('Ping test failed:', err);
-            process.exit(1);
-          });
-        "
+    - name: Test plugin functionality
+      run: node scripts/test-functionality.js
         
     - name: Check package structure
       run: |
