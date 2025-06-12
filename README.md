@@ -193,7 +193,11 @@ Add the following to your Homebridge `config.json`:
 - **Use Case**: Web servers, API endpoints, web applications
 - **Pros**: Tests actual service availability, works through firewalls, more accurate for web services
 - **Cons**: Slightly higher overhead, requires HTTP service
-- **Status Codes**: Accepts any 2xx response (200, 201, 202, etc.) as "up"
+- **Status Codes**: Accepts responses indicating server is up:
+  - **2xx**: Success responses (200, 201, 202, etc.)
+  - **401**: Unauthorized (server up, needs authentication)
+  - **403**: Forbidden (server up, access denied)
+  - **404**: Not Found (server up, wrong path)
 - **Best For**: Websites, web servers, APIs, applications
 
 ### 🤔 **Which Method to Choose?**
@@ -206,7 +210,7 @@ Add the following to your Homebridge `config.json`:
 ## Technical Details
 
 - **Ping Method**: Uses ICMP ping to test connectivity
-- **HTTP Method**: Makes GET requests and checks for 2xx status codes
+- **HTTP Method**: Makes GET requests and checks for server response codes
 - **URL Support**: Automatically extracts hostname from HTTP/HTTPS URLs
 - **Error Handling**: Network errors are treated as server down status
 - **Performance**: Lightweight with minimal resource usage
