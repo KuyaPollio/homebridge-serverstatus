@@ -5,7 +5,7 @@ A Homebridge plugin that monitors the status of your local servers using ping an
 ## Features
 
 - 🔍 **Server Monitoring**: Monitor multiple servers using ping
-- 📱 **HomeKit Integration**: Creates motion sensors in HomeKit (motion detected = server up)
+- 📱 **HomeKit Integration**: Creates contact sensors in HomeKit (contact detected = server up)
 - ⏰ **Periodic Checks**: Configurable ping intervals for each server
 - 🔔 **Status Notifications**: HomeKit notifications when server status changes
 - ⚙️ **Flexible Configuration**: Individual timeout and interval settings per server
@@ -115,32 +115,33 @@ Add the following to your Homebridge `config.json`:
 
 1. **Server Monitoring**: The plugin periodically pings each configured server
 2. **Status Detection**: A successful ping response indicates the server is "up"
-3. **HomeKit Integration**: Each server appears as a motion sensor in HomeKit
+3. **HomeKit Integration**: Each server appears as a contact sensor in HomeKit
 4. **Status Mapping**: 
-   - Motion Detected = Server is UP ✅
-   - No Motion = Server is DOWN ❌
+   - Contact Detected = Server is UP ✅ (Connected)
+   - Contact Not Detected = Server is DOWN ❌ (Disconnected)
 5. **Automation Trigger**: Status changes trigger HomeKit notifications and can be used in automations
 
 ## Usage in HomeKit
 
 ### Viewing Status
 - Open the Home app on your device
-- Each monitored server appears as a motion sensor
-- The sensor shows "Motion Detected" when the server is online
+- Each monitored server appears as a contact sensor
+- The sensor shows "Contact Detected" when the server is online (connected)
+- The sensor shows "Contact Not Detected" when the server is offline (disconnected)
 
 ### Creating Automations
 1. Open the Home app
 2. Go to the Automation tab
 3. Create a new automation
 4. Choose "A Sensor Detects Something" or "A Sensor Stops Detecting"
-5. Select your server sensor
+5. Select your server contact sensor
 6. Configure actions (send notification, control other devices, etc.)
 
 ### Example Automations
-- **Server Down Alert**: Send notification when motion stops being detected
+- **Server Down Alert**: Send notification when contact is no longer detected
 - **Backup Server**: Turn on backup systems when main server goes down
-- **Status Lights**: Control smart lights to show server status
-- **Logging**: Trigger shortcuts to log server downtime
+- **Status Lights**: Control smart lights to show server status (green = contact detected, red = no contact)
+- **Logging**: Trigger shortcuts to log server uptime/downtime
 
 ## Troubleshooting
 

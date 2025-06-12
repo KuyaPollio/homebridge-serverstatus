@@ -24,30 +24,35 @@ export class ServerStatusAccessory {
       .setCharacteristic(this.platform.Characteristic.Model, 'Server Monitor')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, this.generateSerialNumber());
 
-    // Get or create the MotionSensor service
-    // Using MotionSensor as it provides a simple on/off status that can trigger automations
-    this.service = this.accessory.getService(this.platform.Service.MotionSensor) || 
-                   this.accessory.addService(this.platform.Service.MotionSensor);
+    // Get or create the ContactSensor service
+    // Using ContactSensor as it provides open/closed status perfect for server connectivity
+    this.service = this.accessory.getService(this.platform.Service.ContactSensor) || 
+                   this.accessory.addService(this.platform.Service.ContactSensor);
 
     // Set the service name, this is what is displayed as the default name on the Home app
     this.service.setCharacteristic(this.platform.Characteristic.Name, this.serverConfig.name);
 
-    // Register handlers for the MotionDetected characteristic
-    this.service.getCharacteristic(this.platform.Characteristic.MotionDetected)
-      .onGet(this.getMotionDetected.bind(this));
+    // Register handlers for the ContactSensorState characteristic
+    this.service.getCharacteristic(this.platform.Characteristic.ContactSensorState)
+      .onGet(this.getContactSensorState.bind(this));
 
     // Start monitoring the server
     this.startMonitoring();
   }
 
   /**
-   * Handle requests to get the current value of the "Motion Detected" characteristic
-   * In our case, motion detected = server is up
+   * Handle requests to get the current value of the "Contact Sensor State" characteristic
+   * CONTACT_DETECTED (0) = server is up (connected)
+   * CONTACT_NOT_DETECTED (1) = server is down (disconnected)
    */
-  async getMotionDetected(): Promise<CharacteristicValue> {
+  async getContactSensorState(): Promise<CharacteristicValue> {
     const isUp = await this.pingServer();
-    this.platform.log.debug(`[${this.serverConfig.name}] Status:`, isUp ? 'UP' : 'DOWN');
-    return isUp;
+    this.platform.log.debug(`[${this.serverConfig.name}] Status:`, isUp ? 'UP (Contact Detected)' : 'DOWN (Contact Not Detected)');
+    
+    // Return the appropriate ContactSensorState value
+    return isUp 
+      ? this.platform.Characteristic.ContactSensorState.CONTACT_DETECTED
+      : this.platform.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
   }
 
   /**
@@ -104,9 +109,13 @@ export class ServerStatusAccessory {
         this.currentStatus = isUp;
         
         // Update the characteristic value
-        this.service.updateCharacteristic(this.platform.Characteristic.MotionDetected, isUp);
+        const contactState = isUp 
+          ? this.platform.Characteristic.ContactSensorState.CONTACT_DETECTED
+          : this.platform.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED;
+          
+        this.service.updateCharacteristic(this.platform.Characteristic.ContactSensorState, contactState);
         
-        this.platform.log.info(`[${this.serverConfig.name}] Status changed: ${isUp ? 'UP' : 'DOWN'}`);
+        this.platform.log.info(`[${this.serverConfig.name}] Status changed: ${isUp ? 'UP (Contact Detected)' : 'DOWN (Contact Not Detected)'}`);
       }
     } catch (error) {
       this.platform.log.error(`[${this.serverConfig.name}] Error checking status:`, error);
@@ -114,8 +123,11 @@ export class ServerStatusAccessory {
       // If there's an error, consider the server down
       if (this.currentStatus !== false) {
         this.currentStatus = false;
-        this.service.updateCharacteristic(this.platform.Characteristic.MotionDetected, false);
-        this.platform.log.info(`[${this.serverConfig.name}] Status changed: DOWN (due to error)`);
+        this.service.updateCharacteristic(
+          this.platform.Characteristic.ContactSensorState, 
+          this.platform.Characteristic.ContactSensorState.CONTACT_NOT_DETECTED
+        );
+        this.platform.log.info(`[${this.serverConfig.name}] Status changed: DOWN (Contact Not Detected - due to error)`);
       }
     }
   }
