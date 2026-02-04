@@ -1,6 +1,16 @@
+<p align="center" style="text-align:center;">
+
+<img src="https://github.com/homebridge/branding/raw/latest/logos/homebridge-wordmark-logo-vertical.png" width="150" style="display:block; margin:auto;">
+
+</p>
+
+<span align="center">
+
 # Homebridge Server Status Plugin
 
-A Homebridge plugin that monitors the status of your local servers using ping and creates HomeKit sensors that can trigger automations when server status changes.
+</span>
+
+This is a [Homebridge](https://github.com/homebridge/homebridge) plug-in that monitors the status of your local servers using ping (ICMP) or HTML requests and creates HomeKit sensors that can trigger automations when server status changes.
 
 ## Features
 
@@ -254,5 +264,8 @@ For issues and questions:
 - Ensure your configuration follows the examples above
 
 ---
+<span align="center">
+  
+**Made with ❤️ for the Homebridge Community**
 
-**Made with ❤️ for the Homebridge community** 
+</span>
